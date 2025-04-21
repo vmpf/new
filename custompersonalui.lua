@@ -33,14 +33,8 @@ local function createBox(pos, size, color)
     return b
 end
 
-local function createLine(p1, p2, color)
-    local l = Drawing.new("Line")
-    l.From = p1
-    l.To = p2
-    l.Color = color
-    l.Thickness = 1
-    l.Visible = true
-    return l
+local function inBounds(pos, size, mouse)
+    return mouse.X >= pos.X and mouse.X <= pos.X + size.X and mouse.Y >= pos.Y and mouse.Y <= pos.Y + size.Y
 end
 
 function UILibrary:CreateWindow(title)
@@ -61,30 +55,33 @@ function UILibrary:CreateWindow(title)
     table.insert(elements, winBg)
     table.insert(elements, titleText)
 
+    rs.RenderStepped:Connect(function()
+        local mouse = uis:GetMouseLocation()
+        for _, t in pairs(tabs) do
+            local txt = t.text
+            local pos = txt.Position
+            local size = txt.TextBounds
+            local hovering = inBounds(pos, size, mouse)
+            if hovering and activeTab ~= t.name then
+                txt.Color = theme.accent
+            elseif not hovering and activeTab ~= t.name then
+                txt.Color = theme.darktext
+            end
+        end
+    end)
+
     function self:CreateTab(name)
         local idx = #tabs + 1
         local tabX = windowPos.X + (idx - 1) * 60
-        local tabText = createText(name, 13, Vector2.new(tabX, windowPos.Y - 2), false)
+        local tabText = createText(name, 13, Vector2.new(tabX, windowPos.Y - 2), false, theme.darktext)
         table.insert(tabs, {name = name, text = tabText})
         tabContent[name] = {}
-
-        tabText.Color = theme.darktext
-
-        tabText.MouseEnter = function()
-            tabText.Color = theme.accent
-        end
-
-        tabText.MouseLeave = function()
-            if activeTab ~= name then
-                tabText.Color = theme.darktext
-            end
-        end
 
         uis.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 local mouse = uis:GetMouseLocation()
                 local size = Vector2.new(tabText.TextBounds.X, tabText.TextBounds.Y)
-                if mouse.X >= tabText.Position.X and mouse.X <= tabText.Position.X + size.X and mouse.Y >= tabText.Position.Y and mouse.Y <= tabText.Position.Y + size.Y then
+                if inBounds(tabText.Position, size, mouse) then
                     for _, v in pairs(tabContent) do
                         for _, e in pairs(v) do
                             e.Visible = false
@@ -112,7 +109,7 @@ function UILibrary:CreateWindow(title)
                 table.insert(tabContent[name], secLabel)
 
                 function section:Checkbox(label, callback)
-                    local box = createBox(secBox.Position + Vector2.new(5, 20 + #tabContent[name] * 20), Vector2.new(12, 12), Color3.fromRGB(10, 10, 10))
+                    local box = createBox(secBox.Position + Vector2.new(5, 30 + #tabContent[name] * 20), Vector2.new(12, 12), Color3.fromRGB(10, 10, 10))
                     local text = createText(label, 13, box.Position + Vector2.new(20, 0))
                     local state = false
 
@@ -122,7 +119,7 @@ function UILibrary:CreateWindow(title)
                     uis.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 then
                             local mouse = uis:GetMouseLocation()
-                            if mouse.X >= box.Position.X and mouse.X <= box.Position.X + 12 and mouse.Y >= box.Position.Y and mouse.Y <= box.Position.Y + 12 then
+                            if inBounds(box.Position, Vector2.new(12, 12), mouse) then
                                 state = not state
                                 box.Color = state and theme.accent or Color3.fromRGB(10, 10, 10)
                                 callback(state)
@@ -131,27 +128,94 @@ function UILibrary:CreateWindow(title)
                     end)
                 end
 
-                function section:Keybind(label, callback)
-                    local bindText = createText(label .. ": NONE", 13, secBox.Position + Vector2.new(5, 40 + #tabContent[name] * 20))
-                    local key = nil
-                    local binding = false
+                function section:Slider(label, min, max, callback)
+                    local barPos = secBox.Position + Vector2.new(5, 40 + #tabContent[name] * 20)
+                    local bar = createBox(barPos, Vector2.new(150, 4), theme.outline)
+                    local fill = createBox(barPos, Vector2.new(0, 4), theme.accent)
+                    local text = createText(label .. ": " .. min, 13, barPos + Vector2.new(0, -14))
 
-                    table.insert(tabContent[name], bindText)
+                    table.insert(tabContent[name], bar)
+                    table.insert(tabContent[name], fill)
+                    table.insert(tabContent[name], text)
+
+                    local dragging = false
 
                     uis.InputBegan:Connect(function(input)
-                        local mouse = uis:GetMouseLocation()
-                        local size = bindText.TextBounds
-                        local pos = bindText.Position
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 and not binding then
-                            if mouse.X >= pos.X and mouse.X <= pos.X + size.X and mouse.Y >= pos.Y and mouse.Y <= pos.Y + size.Y then
-                                binding = true
-                                bindText.Text = label .. ": ..."
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            local mouse = uis:GetMouseLocation()
+                            if inBounds(bar.Position, bar.Size, mouse) then
+                                dragging = true
                             end
-                        elseif binding and input.UserInputType == Enum.UserInputType.Keyboard then
-                            binding = false
-                            key = input.KeyCode
-                            bindText.Text = label .. ": " .. key.Name
-                            callback(key)
+                        end
+                    end)
+
+                    uis.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            dragging = false
+                        end
+                    end)
+
+                    rs.RenderStepped:Connect(function()
+                        if dragging then
+                            local mouse = uis:GetMouseLocation()
+                            local rel = math.clamp((mouse.X - bar.Position.X) / bar.Size.X, 0, 1)
+                            fill.Size = Vector2.new(bar.Size.X * rel, 4)
+                            local val = math.floor(min + (max - min) * rel)
+                            text.Text = label .. ": " .. val
+                            callback(val)
+                        end
+                    end)
+                end
+
+                function section:Dropdown(label, options, callback)
+                    local dropdown = {}
+                    local basePos = secBox.Position + Vector2.new(5, 50 + #tabContent[name] * 20)
+                    local box = createBox(basePos, Vector2.new(150, 16), theme.outline)
+                    local text = createText(label .. ": " .. options[1], 13, basePos + Vector2.new(2, -1))
+
+                    table.insert(tabContent[name], box)
+                    table.insert(tabContent[name], text)
+
+                    local open = false
+                    local selected = options[1]
+
+                    uis.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            local mouse = uis:GetMouseLocation()
+                            if inBounds(box.Position, box.Size, mouse) then
+                                open = not open
+                                if open then
+                                    for i, opt in ipairs(options) do
+                                        local optBox = createBox(basePos + Vector2.new(0, i * 16), Vector2.new(150, 16), theme.section)
+                                        local optText = createText(opt, 13, optBox.Position + Vector2.new(2, -1))
+                                        table.insert(tabContent[name], optBox)
+                                        table.insert(tabContent[name], optText)
+
+                                        uis.InputBegan:Connect(function(input2)
+                                            if input2.UserInputType == Enum.UserInputType.MouseButton1 then
+                                                local mouse2 = uis:GetMouseLocation()
+                                                if inBounds(optBox.Position, optBox.Size, mouse2) then
+                                                    selected = opt
+                                                    text.Text = label .. ": " .. opt
+                                                    callback(opt)
+                                                    open = false
+                                                    for j = #tabContent[name], 1, -1 do
+                                                        if tabContent[name][j] == optBox or tabContent[name][j] == optText then
+                                                            table.remove(tabContent[name], j):Remove()
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end)
+                                    end
+                                else
+                                    for i = #tabContent[name], 1, -1 do
+                                        if tabContent[name][i].Position.Y > box.Position.Y then
+                                            table.remove(tabContent[name], i):Remove()
+                                        end
+                                    end
+                                end
+                            end
                         end
                     end)
                 end
@@ -164,4 +228,4 @@ function UILibrary:CreateWindow(title)
     return self
 end
 
-return UILibrary -- this is just to test, adding more stuff slowly.
+return UILibrary
