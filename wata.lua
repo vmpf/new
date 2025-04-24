@@ -74,7 +74,7 @@ return function()
         infoText = Drawing.new("Text")
         infoText.Center = false
         infoText.Outline = false
-        infoText.Size = 13
+        infoText.Size = 8
         infoText.Font = 2
         infoText.ZIndex = 12
         infoText.Color = TEXT_COLOR
