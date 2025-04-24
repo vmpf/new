@@ -74,7 +74,7 @@ return function()
         infoText = Drawing.new("Text")
         infoText.Center = false
         infoText.Outline = false
-        infoText.Size = 14
+        infoText.Size = 13
         infoText.Font = 2
         infoText.ZIndex = 12
         infoText.Color = TEXT_COLOR
@@ -96,7 +96,7 @@ return function()
         local titleSize = TextService:GetTextSize(titleText.Text, titleText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
         local infoSize = TextService:GetTextSize(infoText.Text, infoText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
         local width = math.max(titleSize.X, infoSize.X) + 20
-        local height = titleSize.Y + infoSize.Y + 15
+        local height = titleSize.Y + infoSize.Y + 20
         
         local headerHeight = titleSize.Y + 6
         mainFrame.Visible = self.visible
