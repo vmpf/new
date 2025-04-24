@@ -1,79 +1,66 @@
 return function()
-    local watermark = {
-        textObjects = {},
-        container = nil,
-        lastUpdate = 0,
-        refreshRate = 0.05, 
-    }
+    local watermark = {}
 
-    local uis = game:GetService("UserInputService")
-    local rs = game:GetService("RunService")
-    local stats = game:GetService("Stats")
-    local players = game:GetService("Players")
+    function watermark:Initialize(title, subtitle) 
+        self.title = title or "nexus.priv"
+        self.subtitle = subtitle or game.Players.LocalPlayer.Name
+        self.startTime = tick()
+        self.fps = 0
+        self.frames = 0
+        self.lastUpdate = tick()
 
-    local function formatDate()
-        local date = {os.date('%b', os.time()), os.date('%d', os.time()), os.date('%Y', os.time())}
-        local day = tonumber(date[2])
-        local suffix = (day == 1 and "st") or (day == 2 and "nd") or (day == 3 and "rd") or "th"
-        date[2] = date[2] .. suffix
-        return table.concat(date, ", ")
-    end
-
-    local function createText(label)
-        local txt = Instance.new("TextLabel")
-        txt.BackgroundTransparency = 1
-        txt.TextColor3 = Color3.new(1, 1, 1)
-        txt.Font = Enum.Font.Code
-        txt.TextSize = 14
-        txt.TextStrokeTransparency = 0.8
-        txt.TextXAlignment = Enum.TextXAlignment.Left
-        txt.Size = UDim2.new(0, 200, 0, 14)
-        txt.Text = label
-        txt.Parent = watermark.container
-        return txt
-    end
-
-    function watermark:Initialize()
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "NexusWatermark"
-        screenGui.ResetOnSpawn = false
-        pcall(function()
-            screenGui.Parent = game:GetService("CoreGui")
+        game:GetService("RunService").RenderStepped:Connect(function()
+            self.frames = self.frames + 1
+            if tick() - self.lastUpdate >= 1 then
+                self.fps = self.frames
+                self.frames = 0
+                self.lastUpdate = tick()
+            end
         end)
 
-        self.container = Instance.new("Frame")
-        self.container.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        self.container.BorderSizePixel = 0
-        self.container.Position = UDim2.new(0, 10, 0, 10)
-        self.container.Size = UDim2.new(0, 0, 0, 18)
-        self.container.ClipsDescendants = true
-        self.container.Parent = screenGui
+        game:GetService("RunService").RenderStepped:Connect(function()
+            self:draw()
+        end)
+    end
 
-        local padding = Instance.new("UIPadding")
-        padding.PaddingLeft = UDim.new(0, 6)
-        padding.PaddingRight = UDim.new(0, 6)
-        padding.Parent = self.container
+    function watermark:draw()
+        local TextService = game:GetService("TextService")
+        local pos = Vector2.new(20, 20)
+        local time = os.date("%H:%M:%S")
+        local text = string.format("%s | FPS: %s | %s", self.subtitle, self.fps, time)
+        local size = TextService:GetTextSize(text, 16, Enum.Font.SourceSans, Vector2.new(9999, 9999))
 
-        local txt = createText("initializing...")
-        table.insert(self.textObjects, txt)
+        local frame = Drawing.new("Square")
+        frame.Position = pos - Vector2.new(5, 5)
+        frame.Size = size + Vector2.new(10, 10)
+        frame.Color = Color3.new(0, 0, 0)
+        frame.Thickness = 1
+        frame.Filled = true
+        frame.Transparency = 0.6
+        frame.ZIndex = 2
 
-        rs.RenderStepped:Connect(function(dt)
-            self.lastUpdate = self.lastUpdate + dt
-            if self.lastUpdate >= self.refreshRate then
-                self.lastUpdate = 0
+        local outline = Drawing.new("Square")
+        outline.Position = frame.Position
+        outline.Size = frame.Size
+        outline.Color = Color3.fromRGB(255, 255, 255)
+        outline.Thickness = 1
+        outline.Filled = false
+        outline.ZIndex = 3
 
-                local fps = math.floor(1 / dt)
-                local ping = math.floor(stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-                local timeStr = os.date("%X", os.time())
-                local dateStr = formatDate()
-                local username = players.LocalPlayer and players.LocalPlayer.Name or "Unknown"
+        local textObj = Drawing.new("Text")
+        textObj.Text = text
+        textObj.Position = pos
+        textObj.Size = 16
+        textObj.Color = Color3.fromRGB(255, 255, 255)
+        textObj.Center = false
+        textObj.Outline = true
+        textObj.Font = 2
+        textObj.ZIndex = 4
 
-                local fullText = string.format("nexus.priv | %s | Roblox | %dfps | %dms | %s | %s", username, fps, ping, timeStr, dateStr)
-                txt.Text = fullText
-
-                local textSize = game:GetService("TextService"):GetTextSize(fullText, 14, Enum.Font.Code, Vector2.new(1000, 14))
-                self.container.Size = UDim2.new(0, textSize.X + 12, 0, 18)
-            end
+        task.delay(0.03, function()
+            frame:Remove()
+            outline:Remove()
+            textObj:Remove()
         end)
     end
 
