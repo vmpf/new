@@ -89,33 +89,32 @@ return function()
     end
     
     function watermark:Draw()
-        local time = os.date("%H:%M:%S")
-        local ping = math.floor(Players.LocalPlayer:GetNetworkPing() * 1000)
-        titleText.Text = self.title
-        infoText.Text = string.format("%s | %d fps | %d ms | %s", self.subtitle, self.fps, ping, time)
-        local titleSize = TextService:GetTextSize(titleText.Text, titleText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
-        local infoSize = TextService:GetTextSize(infoText.Text, infoText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
-        local width = math.max(titleSize.X, infoSize.X) + 70
-        local height = titleSize.Y + infoSize.Y + 20
-        
-        local headerHeight = titleSize.Y + 6
-        mainFrame.Visible = self.visible
-        mainFrame.Position = self.position
-        mainFrame.Size = Vector2.new(width + 2, height + 2)
-        outerBorder.Visible = self.visible
-        outerBorder.Position = self.position
-        outerBorder.Size = Vector2.new(width + 2, height + 2)
-        innerBorder.Visible = self.visible
-        innerBorder.Position = self.position + Vector2.new(1, 1)
-        innerBorder.Size = Vector2.new(width, height)
-        headerLine.Visible = self.visible
-        headerLine.Position = self.position + Vector2.new(1, headerHeight)
-        headerLine.Size = Vector2.new(width, 1)
-        titleText.Visible = self.visible
-        titleText.Position = self.position + Vector2.new(10, 3)
-        
-        infoText.Visible = self.visible
-        infoText.Position = self.position + Vector2.new(10, headerHeight + 5)
+    local ping = math.floor(Players.LocalPlayer:GetNetworkPing() * 1000)
+    titleText.Text = self.title
+    infoText.Text = string.format("%s | %d fps | %d ms", self.subtitle, self.fps, ping)
+    local titleSize = TextService:GetTextSize(titleText.Text, titleText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
+    local infoSize = TextService:GetTextSize(infoText.Text, infoText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
+    local width = math.max(titleSize.X, infoSize.X) + 20
+    local height = titleSize.Y + infoSize.Y + 20
+
+    local headerHeight = titleSize.Y + 6
+    mainFrame.Visible = self.visible
+    mainFrame.Position = self.position
+    mainFrame.Size = Vector2.new(width + 2, height + 2)
+    outerBorder.Visible = self.visible
+    outerBorder.Position = self.position
+    outerBorder.Size = Vector2.new(width + 2, height + 2)
+    innerBorder.Visible = self.visible
+    innerBorder.Position = self.position + Vector2.new(1, 1)
+    innerBorder.Size = Vector2.new(width, height)
+    headerLine.Visible = self.visible
+    headerLine.Position = self.position + Vector2.new(1, headerHeight)
+    headerLine.Size = Vector2.new(width, 1)
+    titleText.Visible = self.visible
+    titleText.Position = self.position + Vector2.new(10, 3)
+
+    infoText.Visible = self.visible
+    infoText.Position = self.position + Vector2.new(10, headerHeight + 5)
     end
     
     function watermark:Destroy()
