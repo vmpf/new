@@ -95,7 +95,7 @@ return function()
         infoText.Text = string.format("%s | %d fps | %d ms | %s", self.subtitle, self.fps, ping, time)
         local titleSize = TextService:GetTextSize(titleText.Text, titleText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
         local infoSize = TextService:GetTextSize(infoText.Text, infoText.Size, Enum.Font.SourceSans, Vector2.new(1000, 1000))
-        local width = math.max(titleSize.X, infoSize.X) + 30
+        local width = math.max(titleSize.X, infoSize.X) + 70
         local height = titleSize.Y + infoSize.Y + 20
         
         local headerHeight = titleSize.Y + 6
